@@ -273,17 +273,17 @@ What's wrong with the `lateStatement` assignment and how would you fix it?
 
 ::: {.callout-tip}
 ## Your Answer: Data Types and Date Handling
-*Replace this with your answer to Question 1.*
+*print(shipments_df['actualShipDate'].dtype); dtype of actualShipDate is datetime64[ns]. It’s important that both actualShipDate and plannedShipDate have the same datetime dtype so that comparisons (>, <) and date subtraction work correctly. If one were a string, the comparison would be incorrect or cause errors.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: String vs Date Comparison
-*Replace this with your answer to Question 2.*
+*When dates are compared as strings, Python compares them alphabetically (character by character), not chronologically. Example: "04-11-2025" > "05-20-2024";As strings, this may give the wrong result because "04" is less than "05". When converted to datetime objects, the comparison correctly reflects that 2025 is later than 2024. Therefore, dates should always be converted to datetime before comparing.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Debug This Code
-*Replace this with your answer to Question 3.*
+*The error occurs because is_late does not exist in shipments_df and because a pandas Series cannot be used inside a Python inline if. The fix is to use lambda df and np.where() inside .assign().*
 :::
 
 ### 2. Subset: Querying Rows and Filtering Columns
@@ -329,12 +329,12 @@ print(late_shipments.head())
 
 ::: {.callout-tip}
 ## Your Answer: Query vs Boolean Indexing
-*Replace this with your answer to Question 1.*
+*Both return the same result. Although .query() is often more readable because it looks cleaner, especially when chaining methods and writing multiple conditions.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Additional Row Querying
-*Replace this with your answer to Question 2.*
+*We can use a variable like this: late_threshold = 5; late_shipments = shipments_with_lateness.query('days_late >= @late_threshold'); print(late_shipments.head());The @ allows .query() to reference the external Python variable. This returns shipments that are at least 5 days late.*
 :::
 
 ### 3. Drop: Removing Unwanted Data
@@ -373,12 +373,13 @@ print("Remaining columns:", clean_shipments.columns.tolist())
 
 ::: {.callout-tip}
 ## Your Answer: Drop vs Filter Strategies
-*Replace this with your answer to Question 1.*
+*.drop(columns=['quantity']) removes specific columns you don’t want, while .filter() keeps only the columns you specify.;.drop() is to be used when you only need to remove a few unwanted columns.;.filter() is to be used when you want to explicitly keep a small set of important columns and ignore everything else.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Handling Missing Data
-*Replace this with your answer to Question 2.*
+*If you use .dropna() without specifying subset, pandas removes rows with missing values in any column. Using .dropna(subset=['plannedShipDate', 'actualShipDate']) only removes rows where those specific columns have missing values. Being selective prevents dropping rows unnecessarily when missing values exist in columns that aren’t important for your analysis.*
+
 :::
 
 ### 4. Sort: Arranging Data
@@ -417,12 +418,13 @@ print(sorted_by_lateness[['shipID', 'partID', 'days_late', 'is_late']].head(10))
 
 ::: {.callout-tip}
 ## Your Answer: Sorting Strategies
-*Replace this with your answer to Question 1.*
+*ascending=True sorts values from smallest to largest.ascending=False sorts from largest to smallest.To sort by multiple columns (e.g., first by is_late, then by days_late): sorted_by_lateness = clean_shipments.sort_values(['is_late', 'days_late'], ascending=[False, False]).reset_index(drop=True).This sorts late shipments first, then within those by highest days late.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Index Management
-*Replace this with your answer to Question 2.*
+*When you sort a dataframe, the original index stays attached to the rows, even though their order changes.This can create a messy or non-sequential index.Using .reset_index(drop=True) resets the index to 0, 1, 2, … and drops the old index, keeping the dataframe clean and easier to work with.*
+
 :::
 
 ### 5. Aggregate: Summarizing Data
@@ -463,7 +465,7 @@ print(f"\nOn-time delivery rate: {on_time_rate:.1f}%")
 
 ::: {.callout-tip}
 ## Your Answer: Boolean Aggregation
-*Replace this with your answer to Question 1.*
+*sum() works on boolean values because in Python, True = 1 and False = 0.So when we use: clean_shipments['is_late'].sum() it counts the number of True values, which is the number of late shipments.*
 :::
 
 ### 6. Merge: Combining Information
@@ -503,12 +505,12 @@ print(shipments_with_category['prodCategory'].value_counts())
 
 ::: {.callout-tip}
 ## Your Answer: Join Types and Data Loss
-*Replace this with your answer to Question 1.*
+*We use how='left' to keep all shipments, even if there’s no matching partID in product_line_df.An inner join could drop shipments that don’t have a match.To check if any shipments were lost: len(clean_shipments)len(shipments_with_category); If the counts are different, some shipments were lost during the merge.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Key Column Matching
-*Replace this with your answer to Question 2.*
+*If there are duplicate partID values in product_line_df, the merge becomes a one-to-many join. That means shipments with that partID will be duplicated, increasing the number of rows and potentially inflating counts or metrics.*
 :::
 
 ### 7. Split-Apply-Combine: Group Analysis
@@ -549,12 +551,13 @@ print(service_by_category)
 
 ::: {.callout-tip}
 ## Your Answer: GroupBy Mechanics
-*Replace this with your answer to Question 1.*
+*.groupby('prodCategory') splits the dataframe into separate groups based on each unique product category.It does not calculate anything by itself; it just creates grouped objects.We need .agg() to apply summary functions (like mean, sum, count) to each group and combine the results back into a new summarized dataframe.If we don’t use .agg() (or another aggregation like .mean()), we just get a grouped object — no computed results.*
 :::
 
 ::: {.callout-tip}
 ## Your Answer: Multi-Level Grouping
-*Replace this with your answer to Question 2.*
+*Grouping by ['shipID', 'prodCategory'] splits the data by both shipment and category.This answers a different question:“How does each product category perform overall?” vs “Within each shipment, how did each product category perform?”Since one shipment can contain multiple partIDs, multi-level grouping analyzes performance at the shipment-category level instead of just the overall category level.*
+
 :::
 
 ## Answering A Business Question
@@ -599,8 +602,65 @@ print(f"Percentage with multiple categories: {multi_category_shipments['shipID']
 
 ::: {.callout-tip}
 ## Your Answer: Business Question Analysis
-*Replace this with your answer to Question 1.*
+*This analysis answers: “How do shipments containing multiple product categories perform, and how common are they?”Grouping by ['shipID', 'prodCategory'] analyzes performance at the shipment-category level, while grouping by 'prodCategory' alone looks at overall category performance across all shipments.The key difference: 'prodCategory' → Category-level performance overall.['shipID', 'prodCategory'] → How categories behave within individual shipments.Knowing that 23.3% of shipments contain multiple categories helps management understand operational complexity.This insight helps ZappTech identify whether shipment complexity is impacting service levels and where process improvements may be needed.*
+
 :::
+Professional Visualizations
+```{python}
+#| label: professional-visualizations
+#| echo: true
+
+import matplotlib.pyplot as plt
+
+# Calculate on-time percentage by category
+service_rate = (
+    shipments_with_category
+    .groupby('prodCategory')['is_late']
+    .mean()
+)
+
+on_time_pct = (1 - service_rate) * 100
+on_time_pct = on_time_pct.sort_values()
+
+# Plot
+plt.figure()
+plt.bar(on_time_pct.index, on_time_pct.values)
+
+plt.title("On-Time Delivery Rate by Product Category")
+plt.xlabel("Product Category")
+plt.ylabel("On-Time Percentage (%)")
+
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| label: complexity-visualization
+#| echo: true
+
+# Compare single vs multi-category shipments
+complexity_service = (
+    comprehensive_analysis
+    .groupby('has_multiple_categories')['is_late']
+    .mean()
+)
+
+on_time_complexity = (1 - complexity_service) * 100
+
+plt.figure()
+plt.bar(on_time_complexity.index.astype(str), on_time_complexity.values)
+
+plt.title("On-Time Delivery: Single vs Multi-Category Shipments")
+plt.xlabel("Has Multiple Categories")
+plt.ylabel("On-Time Percentage (%)")
+
+plt.tight_layout()
+plt.show()
+```
+The first chart shows clear variation in on-time delivery rates across product categories, highlighting specific areas for improvement. The second chart confirms that shipments containing multiple product categories have lower on-time delivery rates than those with a single category, indicating increased operational complexity impacts performance. 
+
+Focusing on underperforming product categories and simplifying shipment composition can help improve overall service levels.
 
 ## Student Analysis Section: Mastering Data Manipulation {#student-analysis-section}
 
